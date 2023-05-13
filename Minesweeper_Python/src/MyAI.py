@@ -53,7 +53,6 @@ class MyAI( AI ):
 
 		for i in range(self.__colDimension):
 			for j in range(self.__rowDimension):
-
 				if self.__board[i][j] == 0:
 					for x in range(-1, 2):
 						for y in range(-1,2):
