@@ -14,7 +14,7 @@
 
 from AI import AI
 from Action import Action
-
+import itertools
 import random
 class MyAI( AI ):
 
@@ -42,12 +42,15 @@ class MyAI( AI ):
 		# 	return Action(AI.Action.LEAVE)
 		# self.__debug += 1
 
-		# self.__printBoard()
 
 		#NUMBER -> number of the last uncovered cell
 		if number >= 0:
 			self.__board[self.__lastX][self.__lastY] = number
+		else:
+			self.__board[self.__lastX][self.__lastY] = 'b'
 
+		self.__printBoard()
+		
 		if self.__bombsFound:
 			return self.__uncoverNextNotBomb() 
 
@@ -57,10 +60,38 @@ class MyAI( AI ):
 		
 		b = self.__checkAroundNonZero()
 		if b != None:
-			return b			
-			
+			return b		
+
+		c = self.__futureMove()	
+		if c != None:
+			return c		
 		#Take a guess if our algorithm has failed
 		return self.__takeGuess()
+	
+
+	def __futureMove(self):
+		
+		for i in range(self.__colDimension):
+			for j in range(self.__rowDimension):
+				if self.__board[i][j] == 'b' or self.__board[i][j] <= 0:
+					continue
+				positions = []
+				bombCount = 0
+				
+				for x in range(-1, 2):
+					for y in range(-1,2):
+						if (i +x < 0 or i + x >= self.__colDimension or j + y < 0 or j + y >= self.__rowDimension):
+							continue
+						if (self.__board[i + x][j + y] == -1):
+							positions.append((i+x, j+y))
+							
+						if (self.__board[i + x][j + y] == 'b'):
+							bombCount += 1
+				if len(positions) > 0:
+					print(self.__board[i][j])
+					for combo in itertools.combinations(positions, self.__board[i][j] - bombCount):
+						print(combo)
+
 	
 	def __checkAroundNonZero(self):
 		'''Either flags cells that must have remaining cells around as bombs,
@@ -91,10 +122,11 @@ class MyAI( AI ):
 							return Action(action, bx, by)
 						
 						if (emptyCount + bombCount) == numAtCell and not self.__bombsFound and newBomb:
+							self.__lastX = bx
+							self.__lastY = by
 							self.__curBombs += 1
 							if self.__curBombs == self.__totalBombs:
 								self.__bombsFound = True
-							self.__board[bx][by] = 'b'
 							action = AI.Action.FLAG
 							return Action(action, bx, by)
 
@@ -143,7 +175,10 @@ class MyAI( AI ):
 	def __printBoard(self):
 		for j in range(self.__rowDimension - 1, -1, -1):
 			for i in range(self.__colDimension):
-				print(self.__board[i][j], end=' ')
+				if self.__board[i][j] == -1:
+					print('-', end=' ')
+				else:
+					print(self.__board[i][j], end=' ')
 				# print('(', i, j, ')', end=' ')
 			print()
 		print('--------------------')
