@@ -49,7 +49,7 @@ class MyAI( AI ):
 		else:
 			self.__board[self.__lastX][self.__lastY] = 'b'
 
-		self.__printBoard()
+		# self.__printBoard()
 		
 		if self.__bombsFound:
 			return self.__uncoverNextNotBomb() 
@@ -88,47 +88,51 @@ class MyAI( AI ):
 						if (self.__board[i + x][j + y] == 'b'):
 							bombCount += 1
 				if len(positions) > 0:
-					print(self.__board[i][j])
+					# print(self.__board[i][j])
 					for combo in itertools.combinations(positions, self.__board[i][j] - bombCount):
-						print(combo)
+						# print(combo)
+						pass
 
 	
 	def __checkAroundNonZero(self):
 		'''Either flags cells that must have remaining cells around as bombs,
 		or uncovers cells that already have enouhg marked bombs around them.'''
-		for numAtCell in range(1, 9):
-			for i in range(self.__colDimension):
-				for j in range(self.__rowDimension):
-					if self.__board[i][j] == numAtCell:
-						emptyCount = 0
-						bombCount = 0
-						newBomb = False
-						for x in range(-1, 2):
-							for y in range(-1,2):
-								if (i +x < 0 or i + x >= self.__colDimension or j + y < 0 or j + y >= self.__rowDimension):
-									continue
-								if (self.__board[i + x][j + y] == -1):
-									emptyCount += 1
-									bx = i + x
-									by = j + y
-									newBomb = True
-								if (self.__board[i + x][j + y] == 'b'):
-									bombCount += 1
-						
-						if bombCount == numAtCell and emptyCount >= 1:
-							action = AI.Action.UNCOVER
-							self.__lastX = bx
-							self.__lastY = by
-							return Action(action, bx, by)
-						
-						if (emptyCount + bombCount) == numAtCell and not self.__bombsFound and newBomb:
-							self.__lastX = bx
-							self.__lastY = by
-							self.__curBombs += 1
-							if self.__curBombs == self.__totalBombs:
-								self.__bombsFound = True
-							action = AI.Action.FLAG
-							return Action(action, bx, by)
+		# for numAtCell in range(1, 9):
+		for i in range(self.__colDimension):
+			for j in range(self.__rowDimension):
+				# if self.__board[i][j] == numAtCell:
+				if self.__board[i][j] == 'b' or self.__board[i][j] <= 0:
+					continue
+				numAtCell = self.__board[i][j]
+				emptyCount = 0
+				bombCount = 0
+				newBomb = False
+				for x in range(-1, 2):
+					for y in range(-1,2):
+						if (i +x < 0 or i + x >= self.__colDimension or j + y < 0 or j + y >= self.__rowDimension):
+							continue
+						if (self.__board[i + x][j + y] == -1):
+							emptyCount += 1
+							bx = i + x
+							by = j + y
+							newBomb = True
+						if (self.__board[i + x][j + y] == 'b'):
+							bombCount += 1
+				
+				if bombCount == numAtCell and emptyCount >= 1:
+					action = AI.Action.UNCOVER
+					self.__lastX = bx
+					self.__lastY = by
+					return Action(action, bx, by)
+				
+				if (emptyCount + bombCount) == numAtCell and not self.__bombsFound and newBomb:
+					self.__lastX = bx
+					self.__lastY = by
+					self.__curBombs += 1
+					if self.__curBombs == self.__totalBombs:
+						self.__bombsFound = True
+					action = AI.Action.FLAG
+					return Action(action, bx, by)
 
 	def __uncoverNextZero(self):
 		'''Uncover anything around a 0 cell'''
