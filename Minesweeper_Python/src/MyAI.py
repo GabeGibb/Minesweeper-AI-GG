@@ -64,12 +64,38 @@ class MyAI( AI ):
 
 		c = self.__futureMove()	
 		if c != None:
+			# print(c.getMove(), c.getX(), c.getY())
 			return c		
 		#Take a guess if our algorithm has failed
 		return self.__takeGuess()
 	
 
 	def __futureMove(self):
+		def getPossibleCells(xPos, yPos):
+			if self.__board[xPos][yPos] in ('t', 'b') or self.__board[xPos][yPos] < 0:
+				return []
+			possibleCells = []
+			canReturn = False
+			
+			for x in range(-1, 2):
+				for y in range(-1,2):
+					
+					if (xPos+x < 0 or xPos + x >= self.__colDimension or yPos + y < 0 or yPos + y >= self.__rowDimension):
+						# print('HELLO')
+						continue
+					if (self.__board[xPos + x][yPos + y] == -1):
+						# print(self.__board[xPos + x][yPos + y])
+						possibleCells.append([xPos + x, yPos + y])
+					elif (self.__board[xPos + x][yPos + y] == 't'):
+						canReturn = True
+					
+
+			# print(positions)
+			if canReturn:
+				return possibleCells	
+
+			return []		
+
 		
 		for i in range(self.__colDimension):
 			for j in range(self.__rowDimension):
@@ -80,18 +106,52 @@ class MyAI( AI ):
 				
 				for x in range(-1, 2):
 					for y in range(-1,2):
-						if (i +x < 0 or i + x >= self.__colDimension or j + y < 0 or j + y >= self.__rowDimension):
+						if (i + x < 0 or i + x >= self.__colDimension or j + y < 0 or j + y >= self.__rowDimension):
 							continue
 						if (self.__board[i + x][j + y] == -1):
-							positions.append((i+x, j+y))
+							# print(i+x, j)
+							positions.append([i+x, j+y])
 							
 						if (self.__board[i + x][j + y] == 'b'):
 							bombCount += 1
 				if len(positions) > 0:
-					# print(self.__board[i][j])
-					for combo in itertools.combinations(positions, self.__board[i][j] - bombCount):
-						# print(combo)
-						pass
+					combos = []
+					for iteration in itertools.combinations(positions, self.__board[i][j] - bombCount):
+						combos.append(iteration)
+
+					for xPos in range(i-2, i+3):
+						for yPos in range(j-2, j+3):
+							
+							if xPos < 0 or yPos < 0 or xPos >= self.__colDimension or yPos >= self.__rowDimension:
+								continue
+							info = []
+							for combo in combos:
+								for c in combo:
+									self.__board[c[0]][c[1]] = 't'
+								
+								info.append(getPossibleCells(xPos, yPos))
+								
+								for c in combo:
+									self.__board[c[0]][c[1]] = -1
+							if info == []:
+								continue
+							final = []
+							for positions in info:
+								for pos in positions:
+									final.append(pos)
+							
+							for point in final:
+								if final.count(point) == len(info):
+									if self.__board[xPos][yPos] > self.__board[i][j]:
+										self.__curBombs += 1
+										if self.__curBombs == self.__totalBombs:
+											self.__bombsFound = True
+										action = AI.Action.FLAG
+									else:
+										action = AI.Action.UNCOVER
+									self.__lastX = point[0]
+									self.__lastY = point[1]
+									return Action(action, point[0], point[1])
 
 	
 	def __checkAroundNonZero(self):
