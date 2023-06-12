@@ -62,13 +62,23 @@ class MyAI( AI ):
 		if b != None:
 			return b		
 
-		c = self.__futureMove()	
-		if c != None:
-			# print(c.getMove(), c.getX(), c.getY())
-			return c		
+		# #THIS IS WHAT IM WORKING ON NOW
+		# c = self.__futureMove()	
+		# if c != None:
+		# 	# print(c.getMove(), c.getX(), c.getY())
+		# 	return c	
+		# 	
+
 		#Take a guess if our algorithm has failed
+		#PLEASE try this
+		d = self.__makeBetterGuess()
+		if d != None:
+			return d
 		return self.__takeGuess()
 	
+	def __makeBetterGuess():
+		'''Please try implementing this'''
+		pass
 
 	def __futureMove(self):
 		def getPossibleCells(xPos, yPos):
