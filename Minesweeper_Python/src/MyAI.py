@@ -15,7 +15,10 @@
 from AI import AI
 from Action import Action
 import itertools
+from collections import Counter
 import random
+
+
 class MyAI( AI ):
 
 	def __init__(self, rowDimension, colDimension, totalMines, startX, startY):
@@ -35,14 +38,20 @@ class MyAI( AI ):
 		self.__totalBombs = totalMines
 		self.__curBombs = 0
 
-		# self.__debug = 0
+		self.__lastMove = 0
+		self.__sameMoveCounter = 0
 		
 	def getAction(self, number: int) -> "Action Object":
-		# if self.__debug == 20:
+		if self.__lastMove == number:
+			self.__sameMoveCounter += 1
+		else:
+			self.__sameMoveCounter = 0
+		self.__lastMove = number
+		if self.__sameMoveCounter >= 100:
+			return Action(AI.Action.LEAVE)
+		
+		# if number == -2:
 		# 	return Action(AI.Action.LEAVE)
-		# self.__debug += 1
-
-
 		#NUMBER -> number of the last uncovered cell
 		if number >= 0:
 			self.__board[self.__lastX][self.__lastY] = number
@@ -50,7 +59,7 @@ class MyAI( AI ):
 			self.__board[self.__lastX][self.__lastY] = 'b'
 
 		# self.__printBoard()
-		
+
 		if self.__bombsFound:
 			return self.__uncoverNextNotBomb() 
 
@@ -62,25 +71,38 @@ class MyAI( AI ):
 		if b != None:
 			return b		
 
-		# #THIS IS WHAT IM WORKING ON NOW
-		# c = self.__futureMove()	
-		# if c != None:
-		# 	# print(c.getMove(), c.getX(), c.getY())
-		# 	return c	
-		# 	
+		c = self.__futureMove()	
+		if c != None:
+			# print(c.getMove(), c.getX(), c.getY())
+			return c	
+		
+		# d = self.__makeBetterGuess()
+		# if d != None:
+		# 	return d
 
-		#Take a guess if our algorithm has failed
-		#PLEASE try this
-		d = self.__makeBetterGuess()
-		if d != None:
-			return d
 		return self.__takeGuess()
-	
-	def __makeBetterGuess():
-		'''Please try implementing this'''
-		pass
+		
 
 	def __futureMove(self):
+		def getEmptyCount(xPox, yPos):
+			count = 0
+			for x in range(-1, 2):
+				for y in range(-1,2):
+					if (xPos+x < 0 or xPos + x >= self.__colDimension or yPos + y < 0 or yPos + y >= self.__rowDimension):
+						continue
+					if (self.__board[xPos + x][yPos + y] == -1):
+						count += 1
+			return count
+		def getBombCount(xPos, yPos):
+			count = 0
+			for x in range(-1, 2):
+				for y in range(-1,2):
+					if (xPos+x < 0 or xPos + x >= self.__colDimension or yPos + y < 0 or yPos + y >= self.__rowDimension):
+						continue
+					if (self.__board[xPos + x][yPos + y] in ('b', 't')):
+						count += 1
+			return count
+
 		def getPossibleCells(xPos, yPos):
 			if self.__board[xPos][yPos] in ('t', 'b') or self.__board[xPos][yPos] < 0:
 				return []
@@ -91,22 +113,17 @@ class MyAI( AI ):
 				for y in range(-1,2):
 					
 					if (xPos+x < 0 or xPos + x >= self.__colDimension or yPos + y < 0 or yPos + y >= self.__rowDimension):
-						# print('HELLO')
 						continue
 					if (self.__board[xPos + x][yPos + y] == -1):
-						# print(self.__board[xPos + x][yPos + y])
 						possibleCells.append([xPos + x, yPos + y])
 					elif (self.__board[xPos + x][yPos + y] == 't'):
 						canReturn = True
-					
 
-			# print(positions)
 			if canReturn:
 				return possibleCells	
 
 			return []		
 
-		
 		for i in range(self.__colDimension):
 			for j in range(self.__rowDimension):
 				if self.__board[i][j] == 'b' or self.__board[i][j] <= 0:
@@ -119,7 +136,6 @@ class MyAI( AI ):
 						if (i + x < 0 or i + x >= self.__colDimension or j + y < 0 or j + y >= self.__rowDimension):
 							continue
 						if (self.__board[i + x][j + y] == -1):
-							# print(i+x, j)
 							positions.append([i+x, j+y])
 							
 						if (self.__board[i + x][j + y] == 'b'):
@@ -135,16 +151,25 @@ class MyAI( AI ):
 							if xPos < 0 or yPos < 0 or xPos >= self.__colDimension or yPos >= self.__rowDimension:
 								continue
 							info = []
+							bTouching = []
 							for combo in combos:
 								for c in combo:
 									self.__board[c[0]][c[1]] = 't'
 								
 								info.append(getPossibleCells(xPos, yPos))
 								
+								bTouching.append(getBombCount(xPos, yPos))
+
 								for c in combo:
 									self.__board[c[0]][c[1]] = -1
 							if info == []:
 								continue
+
+
+							uniqueTouch = Counter(bTouching).keys()
+							if len(uniqueTouch) != 1:
+								continue
+
 							final = []
 							for positions in info:
 								for pos in positions:
@@ -152,7 +177,10 @@ class MyAI( AI ):
 							
 							for point in final:
 								if final.count(point) == len(info):
-									if self.__board[xPos][yPos] > self.__board[i][j]:
+									if getEmptyCount(xPos, yPos) >= 5 and self.__board[xPos][yPos] == 2:
+										continue
+
+									if self.__board[xPos][yPos] - getBombCount(xPos, yPos) != 1 and bTouching[0] != self.__board[xPos][yPos]:
 										self.__curBombs += 1
 										if self.__curBombs == self.__totalBombs:
 											self.__bombsFound = True
@@ -256,3 +284,47 @@ class MyAI( AI ):
 				# print('(', i, j, ')', end=' ')
 			print()
 		print('--------------------')
+
+
+	# def __makeBetterGuess(self):
+	# 	'''Please try implementing this'''
+	# 	pointDict = {}
+
+	# 	def recursive():
+	# 		# self.__printBoard()
+	# 		for i in range(self.__colDimension):
+	# 			for j in range(self.__rowDimension):
+	# 				# print(i, j)
+	# 				if self.__board[i][j] in ('b', 't') or self.__board[i][j] <= 1:
+	# 					continue
+	# 				positions = []
+	# 				bombCount = 0
+					
+	# 				for x in range(-1, 2):
+	# 					for y in range(-1,2):
+	# 						if (i + x < 0 or i + x >= self.__colDimension or j + y < 0 or j + y >= self.__rowDimension):
+	# 							continue
+	# 						if (self.__board[i + x][j + y] == -1):
+	# 							positions.append([i+x, j+y])
+								
+	# 						if (self.__board[i + x][j + y] in ('b', 't')):
+	# 							bombCount += 1
+
+	# 				if len(positions) > 0:
+	# 					combos = []
+	# 					for iteration in itertools.combinations(positions, self.__board[i][j] - bombCount):
+	# 						combos.append(iteration)
+						
+	# 					for combo in combos:
+	# 						for c in combo:
+	# 							self.__board[c[0]][c[1]] = 't'
+	# 							recursive()
+	# 							spot = str(c[0]) + " " + str(c[1])
+	# 							if spot in pointDict:
+	# 								pointDict[spot] += 1
+	# 							else:
+	# 								pointDict[spot] = 1
+								
+	# 							self.__board[c[0]][c[1]] = -1
+	# 	recursive()
+	# 	print("SHOW ME")
